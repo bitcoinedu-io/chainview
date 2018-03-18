@@ -12,7 +12,7 @@ from flask import Flask, url_for, abort, request, redirect
 from flask import render_template
 import datetime
 import decimal
-from chainview_config import VERSION, DBFILE, chaininfo, params
+from chainview_config import VERSION, GITHUB, DBFILE, chaininfo, params
 
 app = Flask(__name__)
 
@@ -245,7 +245,6 @@ def stats_page():
         time = res.fetchone()[0]
         delta = dbmax_time - datetime.datetime.fromtimestamp(int(time))
         estintervaltime = delta.total_seconds() + blocktime * (retarget - progress)
-        print(delta.total_seconds()/60, estintervaltime)
         nextdiff = float(diff0) * (blocktime*retarget) / float(estintervaltime)
     stats = {'minperblock': minperblock, 'diff0':diff0, 'diff1':diff1, 'diff7':diff7,
              'progress': '%d of %d' % (progress, retarget), 'nextdiff': nextdiff}

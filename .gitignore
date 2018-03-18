@@ -1,0 +1,10 @@
+# Emacs backup files
+*~
+
+# Python stuff, Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Project specific
+chainview-db.sqlite3
+
