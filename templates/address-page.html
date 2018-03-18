@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block pagecontent %}
+      <table class="info">
+	<thead><tr><th colspan="2" style="text-align: left">Address {{addr['addr']}}</th></tr>
+	</thead>
+	<tbody>
+	  <tr><th>Balance</th><td>{{addr['balance']}} {{chaininfo['unit']}}</td></tr>
+	  <tr><th>First use</th><td>{{addr['firstuse']}} ({{addr['age']}} ago)</td></tr>
+	  <tr><th>No. transactions</th><td>{{addr['notxs']}}</td></tr>
+	</tbody>
+      </table>
+      {% include "transaction-list.html" %}
+{% endblock %}

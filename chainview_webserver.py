@@ -1,0 +1,294 @@
+#!/usr/bin/env python3
+
+# Run via flask framework:
+# pip3 install flask
+# FLASK_APP=chainview-webserver.py flask run
+
+import sys
+import requests
+import json
+import sqlite3
+from flask import Flask, url_for, abort, request, redirect
+from flask import render_template
+import datetime
+import decimal
+from chainview_config import VERSION, DBFILE, chaininfo, params
+
+app = Flask(__name__)
+
+print()
+print('Using database file:', DBFILE)
+
+# Calc now - time and express rounded in human language
+# time, now should be datetime objects
+
+def ageof(time, now):
+    delta = now - time
+    d = delta.days
+    h = delta.seconds // 3600
+    m = (delta.seconds // 60) % 60
+    s = delta.seconds % 60
+    age = ''
+    if d > 0:
+        age += '%d days %d hours' % (d,h)
+    else:
+        if h > 0:
+            age += '%d hours %d min' % (h,m)
+        else:
+            age += '%d min %d sec' % (m,s)
+    return age
+
+# Given db cursor cur, fetch info to display on top
+
+def latest_topinfo(cur):
+    r = cur.execute('SELECT MAX(height) FROM block')
+    dbmax = r.fetchone()[0]
+    timestamp = 0
+    if not dbmax:
+        dbmax = -1
+    else:
+        r = cur.execute('SELECT time FROM block WHERE height = ?', (dbmax,))
+        timestamp = r.fetchone()[0]
+    now = datetime.datetime.now().replace(microsecond=0)
+    time = datetime.datetime.fromtimestamp(int(timestamp))
+    age = ageof(time, now)
+    nowstr = now.strftime('%a') + ' ' + str(now)
+    return {'dbmax': dbmax, 'time': time, 'age': age, 'now': now, 'nowstr': nowstr,
+            'version': VERSION, 'github': GITHUB}
+
+############## main page is same as block list page
+# startblock is the highest block number to display at the top
+
+BLOCKS_PER_PAGE = 500
+
+@app.route("/<int:startblock>")
+@app.route("/blocks/<int:startblock>")
+@app.route("/")
+@app.route("/blocks/")
+def main_page(startblock=None):
+    con = sqlite3.connect(DBFILE)
+    cur = con.cursor()
+    topinfo = latest_topinfo(cur)
+    dbmax = topinfo['dbmax']
+    now = topinfo['now']
+
+    if startblock == None:
+        high = dbmax
+    else:
+        high = max(min(int(startblock), dbmax), 0)
+    low = max(high - BLOCKS_PER_PAGE + 1, 0)
+    
+    prevpage = max(high - BLOCKS_PER_PAGE, BLOCKS_PER_PAGE - 1)
+    nextpage = min(high + BLOCKS_PER_PAGE, dbmax)
+    prevurl = url_for('main_page', startblock=prevpage) if prevpage < high else ''
+    nexturl = url_for('main_page', startblock=nextpage) if nextpage > high else ''
+
+    # extra option to only show blocks with #txs > txlimit (to get rid of empty blocks)
+    # (todo: next/prev doesn't really work properly when using txlimit)
+    txlimit = int(request.args.get('txlimit','0'))
+    
+    r = cur.execute('''
+        SELECT height, time, numtxs FROM block
+        WHERE height <= ? AND numtxs >= ?
+        ORDER BY height DESC LIMIT ?''', (str(high),txlimit,BLOCKS_PER_PAGE))
+    blocks = []
+    for r in r.fetchall():
+        time = datetime.datetime.fromtimestamp(int(r[1]))
+        b = {'height': r[0], 'time': time, 'age': ageof(time,now), 'numtxs': r[2]}
+        blocks.append(b)
+    info = {'low': low, 'high': high, 'prevurl': prevurl, 'nexturl': nexturl}
+    return render_template('main-page.html', chaininfo=chaininfo, topinfo=topinfo,
+                           info=info, blocks=blocks)
+
+# Helper for block_page and address_page
+# Note: adds data to existing txs
+
+def get_inputs_outputs(txs, cur):
+    for tx in txs:
+        txid = tx['txid']
+        resI = cur.execute('SELECT output.address, output.value FROM input INNER JOIN output ON input.spendstxid=output.txid AND input.spendsn=output.n WHERE input.txid = ? ORDER BY input.n',
+                           (txid,))
+        inputs = resI.fetchall()
+        if len(inputs) == 0:
+            tx['inputs'] = [('Coinbase', 'mining reward')]
+        else:
+            tx['inputs'] = inputs
+        resO = cur.execute(
+            '''SELECT output.address,output.value,output.type,input.txid FROM output
+               LEFT JOIN input ON input.spendstxid=output.txid AND input.spendsn=output.n
+               WHERE output.txid=? ORDER BY output.n''', (txid,))
+        tx['outputs'] = [{'address':r[0], 'value':r[1], 'type':r[2], 'spentby':r[3]}
+                         for r in resO.fetchall()]
+    return
+
+@app.route("/block/<int:blocknr>")
+def block_page(blocknr):
+    con = sqlite3.connect(DBFILE)
+    cur = con.cursor()
+    topinfo = latest_topinfo(cur)
+    now = topinfo['now']
+    
+    r = cur.execute('''SELECT height, hash, previousblockhash, merkleroot, time, difficulty, numtxs
+                          FROM block WHERE height = ?''',
+                    (blocknr,))
+    r = r.fetchone()
+    if r:
+        timestamp = int(r[4])
+        time = datetime.datetime.fromtimestamp(timestamp)
+        age = ageof(time, now)
+        block = {'height': r[0], 'hash': r[1], 'prevhash': r[2], 'merkle': r[3],
+                 'time': time, 'age': age, 'diff': r[5], 'numtxs': r[6]}
+        prevb = blocknr - 1
+        if prevb < 0:
+            prevb = 0
+        nextb = blocknr + 1
+        if nextb > topinfo['dbmax']:
+            nextb = topinfo['dbmax']
+        prevurl = url_for('block_page', blocknr=prevb) if prevb < blocknr else ''
+        nexturl = url_for('block_page', blocknr=nextb) if nextb > blocknr else ''
+        info = {'prevurl': prevurl, 'nexturl': nexturl}
+        res = cur.execute('SELECT txid,n FROM tx WHERE blockhash = ? ORDER BY n', (block['hash'],))
+        txs = [{'txid':r[0], 'n':r[1]} for r in res.fetchall()]
+        txinfo = {'page':'block', 'header':''}
+        get_inputs_outputs(txs, cur)
+        return render_template('block-page.html', chaininfo=chaininfo, topinfo=topinfo, info=info,
+                               block=block, txinfo=txinfo, txs=txs)
+    else:
+        abort(404)
+
+@app.route("/address/<address>")
+def address_page(address):
+    con = sqlite3.connect(DBFILE)
+    cur = con.cursor()
+    topinfo = latest_topinfo(cur)
+    now = topinfo['now']
+
+    # Search for address in both outputs and inputs
+    res = cur.execute('''
+       SELECT txid,block.height,block.time FROM
+       (SELECT output.txid as id FROM output
+               WHERE output.address=?
+       UNION
+       SELECT input.txid as id FROM output
+               JOIN input ON input.spendstxid=output.txid AND input.spendsn=output.n
+               WHERE output.address=?)
+       JOIN tx ON tx.txid=id
+       JOIN block ON tx.blockhash=block.hash
+       ORDER BY block.height DESC, tx.n DESC
+    ''', (address, address))
+
+    txs = [{'txid':r[0], 'n':-1, 'height':r[1], 'time':datetime.datetime.fromtimestamp(int(r[2]))}
+           for r in res.fetchall()]
+    if len(txs) == 0:
+        abort(404)
+    get_inputs_outputs(txs, cur)
+    
+    balance = decimal.Decimal('0.0')
+    for tx in txs:
+        for op in tx['outputs']:
+            if op['address'] == address and not op['spentby']:
+                balance += decimal.Decimal(op['value'])
+                balance = balance.quantize(decimal.Decimal(10)**-8)
+    firstuse = txs[0]['time']
+    age = ageof(firstuse, now)
+    addr = {'addr':address, 'balance':str(balance), 'firstuse':firstuse, 'age':age, 'notxs':len(txs)}
+    txinfo = {'page':'address', 'header':', recent first'}
+    
+    # extra option to remove coinbase-txs
+    nocb = int(request.args.get('nocb','0'))
+    if nocb:
+        txs = list(filter(lambda tx: tx['inputs'][0][0] != 'Coinbase', txs))
+        txinfo['header'] += ', no coinbase (%i txs)' % len(txs)
+        
+    limit = 500
+    if len(txs) > limit:
+        txs = txs[0:500] # limit html to last txs
+        txinfo['header'] += ', showing only 500'
+    return render_template('address-page.html', chaininfo=chaininfo, topinfo=topinfo,
+                           addr=addr, txinfo=txinfo, txs=txs)
+
+@app.route("/stats/")
+def stats_page():
+    con = sqlite3.connect(DBFILE)
+    cur = con.cursor()
+    topinfo = latest_topinfo(cur)
+    now = topinfo['now']
+    dbmax = topinfo['dbmax']
+    res = cur.execute('SELECT address, value FROM output JOIN tx ON output.txid=tx.txid WHERE tx.n="0" and output.n="0"')
+    topminers = {}
+    for r in res.fetchall():
+        addr = r[0]
+        value = r[1]
+        if addr in topminers:
+            topminers[addr] = (topminers[addr] + decimal.Decimal(value)).quantize(decimal.Decimal(10)**-8)
+        else:
+            topminers[addr] = decimal.Decimal(value)
+    topminers = sorted(topminers.items(), key=lambda i: -i[1])
+
+    res = cur.execute('SELECT time,difficulty FROM block WHERE height=?', (dbmax,))
+    time0, diff0 = res.fetchone()
+    dbmax_time = datetime.datetime.fromtimestamp(int(time0))
+    dayblock = dbmax - 144
+    weekblock = dbmax - 144*7
+    res = cur.execute('SELECT time,difficulty FROM block WHERE height=?', (dayblock,))
+    time1, diff1 = res.fetchone()
+    delta = dbmax_time - datetime.datetime.fromtimestamp(int(time1))
+    minperblock = '%.2f' % (delta.total_seconds() / 144.0 / 60)
+    res = cur.execute('SELECT difficulty FROM block WHERE height=?', (weekblock,))
+    diff7 = res.fetchone()[0]
+    retarget = params['DifficultyAdjustmentInterval']
+    blocktime = params['PowTargetSpacing']
+    progress = dbmax % retarget
+    nextdiff = diff0
+    if progress > 0:
+        res = cur.execute('SELECT time FROM block WHERE height=?', (dbmax-progress,))
+        time = res.fetchone()[0]
+        delta = dbmax_time - datetime.datetime.fromtimestamp(int(time))
+        estintervaltime = delta.total_seconds() + blocktime * (retarget - progress)
+        print(delta.total_seconds()/60, estintervaltime)
+        nextdiff = float(diff0) * (blocktime*retarget) / float(estintervaltime)
+    stats = {'minperblock': minperblock, 'diff0':diff0, 'diff1':diff1, 'diff7':diff7,
+             'progress': '%d of %d' % (progress, retarget), 'nextdiff': nextdiff}
+    return render_template('stats-page.html', chaininfo=chaininfo, topinfo=topinfo,
+                           topminers=topminers, stats=stats)
+
+@app.route("/search/")
+def search():
+    err = 'Unsupported search string.'
+    s = request.args.get('search','').strip()
+    if len(s) < 10:
+        # assume integer block number
+        try:
+            startblock = int(s)
+            if startblock < 0:
+                startblock = 0
+            return redirect(url_for('main_page', startblock=startblock))
+        except ValueError:
+            err = 'Cannot parse block number.'
+    
+    con = sqlite3.connect(DBFILE)
+    cur = con.cursor()
+    
+    if len(s) == 64:
+        # assume hex block hash, merkle hash, or tx hash
+        # start with tx and maybe get blockhash
+        res = cur.execute('SELECT blockhash FROM tx WHERE txid=?', (s,))
+        try:
+            s = res.fetchone()[0]
+        except TypeError:
+            pass
+        res = cur.execute('SELECT height FROM block WHERE hash=? OR merkleroot=?', (s,s))
+        try:
+            blocknr = res.fetchone()[0]
+            return redirect(url_for('block_page', blocknr=blocknr))
+        except TypeError:
+            err = 'Cannot find block, merkle, or transaction hash.'
+
+    # Otherwise, check if address
+    res = cur.execute('SELECT COUNT(*) FROM output WHERE address=?', (s,))
+    if int(res.fetchone()[0]) > 0:
+        return redirect(url_for('address_page', address=s))
+    
+    topinfo = latest_topinfo(cur)
+    return render_template('searchfail-page.html', chaininfo=chaininfo, topinfo=topinfo, search=s, err=err)
+

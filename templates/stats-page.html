@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% block pagecontent %}
+      <table class="info">
+	<thead><tr><th colspan="2" style="text-align: left">Difficulty</th></tr>
+	</thead>
+	<tbody>
+	  <tr><th>Difficulty, 1 week ago</th><td>{{stats['diff7']}}</td></tr>
+	  <tr><th>Difficulty, 1 day ago</th><td>{{stats['diff1']}}</td></tr>
+	  <tr><th>Difficulty, now</th><td>{{stats['diff0']}}</td></tr>
+	  <tr><th>Average time per block last day (last 144 blocks)</th>
+	    <td>{{stats['minperblock']}} min</td></tr>
+	  <tr><th>Retarget interval progress</th><td>{{stats['progress']}} blocks done</td></tr>
+	  <tr><th>Estimated next difficulty</th><td>{{stats['nextdiff']}}</td></tr>
+	</tbody>
+      </table>
+      <br><br><br>      
+      <table class="info">
+	<thead><tr><th colspan="2" style="text-align: left">Miners</th></tr>
+	</thead>
+	<tbody>
+	  {% for m in topminers %}
+	  <tr><th>{{m[0]}}</th><td>{{m[1]}} {{chaininfo['unit']}}</td></tr>
+	  {% endfor %}
+	</tbody>
+      </table>
+      <br><br>
+      <div class="center"><div class="inlineleft">
+      <h2>Advanced views</h2>
+      <p>Some features are only available when manually entering a url:</p>
+      {% set u = url_for('main_page', startblock='5000', txlimit='2') %}
+      <p><a href="{{u}}">{{u}}</a> - blocks listing only including blocks where number of transactions &gt;= txlimit</p>
+      {% set u = url_for('address_page', address='1eduGsrvBJcfyTMij2rYXk9viiVV78PNq', nocb='1') %}
+      <p><a href="{{u}}">{{u}}</a> - address listing with coinbase txs removed</p>
+      </div></div>
+{% endblock %}

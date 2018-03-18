@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+{% block pagecontent %}
+  <p class="center"> {% if info['prevurl'] == '' %}prev{% else %}<a href="{{info['prevurl']}}">prev</a> {% endif %}
+    &nbsp;&nbsp;&nbsp;&nbsp;#{{ block['height'] }}&nbsp;&nbsp;&nbsp;&nbsp;
+    {% if info['nexturl'] == '' %} next {% else %} <a href="{{info['nexturl']}}">next</a> {% endif %}</p>
+      <table class="info">
+	<thead><tr><th colspan="2" style="text-align: left">Block #{{block['height']}}</th></tr>
+	</thead>
+	<tbody>
+	  <tr><th>Block hash</th><td>{{block['hash']}}</td></tr>
+	  <tr><th>Prev hash</th><td>{{block['prevhash']}}</td></tr>
+	  <tr><th>Merkle root</th><td>{{block['merkle']}}</td></tr>
+	  <tr><th>Time</th><td>{{block['time']}} ({{block['age']}} ago)</td></tr>
+	  <tr><th>Difficulty</th><td>{{block['diff']}}</td></tr>
+	  <tr><th>Transactions</th><td>{{block['numtxs']}}</td></tr>
+	</tbody>
+      </table>
+      {% include "transaction-list.html" %}
+{% endblock %}

@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+  <meta http-equiv="refresh" content="77">
+  {% block title %}<title>{{chaininfo['name']}} - Chainview block explorer</title>{% endblock %}
+</head>
+<body>
+  <div id="topbar">
+    <a id="title" href="/">{{chaininfo['name']}}</a>
+    <p id="title2">Chainview Block Explorer v{{topinfo['version']}}<br><a href="{{topinfo['github']}}">github</a></p>
+    <div id="topnav">
+    <a href="/blocks/">Blocks</a>
+    <a href="/stats/">Stats</a>
+    <form id="search" action="{{url_for('search')}}"><input type="text" name="search" placeholder="Search for block, tx, address...">
+    </form>
+    </div>
+  </div>
+  <div id="content">
+    <div id="info">
+      <p style="float: right; margin: 0">{{topinfo['nowstr']}}</p>
+      <p>Latest block: {{ topinfo['dbmax'] }}, {{ topinfo['time'] }} ({{topinfo['age']}} ago)
+	</p>
+    </div>
+    {% block pagecontent %}
+    {% endblock %}
+  </div>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<div class="center">
+  <h2>Transactions {{txinfo['header']}}</h2>
+  <div class="inlineleft">
+      <table class="txs">
+	{% for tx in txs %}
+	<thead>
+	  <tr><th colspan="3">
+	    {% if tx['n'] >= 0 %}
+	    Tx #{{tx['n']}}: {{tx['txid']}}
+	    {% else %}
+	    Tx {{tx['txid']}} in
+	    block #<a href="{{url_for('block_page', blocknr=tx['height'])}}">{{tx['height']}}</a>
+	    ({{tx['time']}})
+	    {% endif %}
+	  </th></tr>
+	</thead><tbody>
+	  <tr><td>
+	    <table class="input">
+	      <thead>
+		<tr><th>Input addresses</th><th>{{chaininfo['unit']}}</th></tr>
+	      </thead>
+	  {% for i in tx['inputs'] %}
+	      <tr><td>
+		{% if (txinfo['page'] == 'address' and addr['addr'] == i[0]) or i[0] == 'Coinbase' %}
+		{{i[0]}}
+		{% else %}
+		<a href="{{url_for('address_page', address=i[0])}}">{{i[0]}}</a>
+		{% endif %}
+	      </td><td>{{i[1]}}</td></tr>
+	  {% endfor %}
+	    </table></td><td>--&gt</td><td>
+	      <table class="output">
+		<thead>
+		  <tr><th>Output addresses</th><th>{{chaininfo['unit']}}</th><th>Spent</th></tr>
+		</thead>
+	  {% for op in tx['outputs'] %}
+		<tr><td>
+		  {% if txinfo['page'] == 'address' and addr['addr'] == op['address'] %}
+		  {{op['address']}}
+		  {% else %}
+		  <a href="{{url_for('address_page', address=op['address'])}}">{{op['address']}}</a>
+		  {% endif %}
+		</td>
+		  <td>{{op['value']}}</td>
+		  <td>
+		    {% if op['spentby'] %}
+		    yes by <a href="{{url_for('search')}}?search={{op['spentby']}}">{{op['spentby'][0:3]}}...</a>
+		    {% endif %}
+		  </td></tr>
+	  {% endfor %}
+	    </table>
+	    </td></tr>
+	  <tr><td>&nbsp</td></tr>
+	</tbody>
+	{% endfor %}
+      </table>
+</div></div>

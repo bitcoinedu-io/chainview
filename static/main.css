@@ -1,0 +1,108 @@
+body {
+    margin: 0;
+}
+a {
+    color: #00867d;
+}
+.center {
+    text-align: center;
+}
+.inlineleft {
+    display: inline-block; text-align: left;
+}
+#topbar {
+    background-color: #4db6ac;
+    overflow: hidden;
+}
+#title,#title2 {
+    margin: 0;
+    color: #00867d;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+    font-weight: bold;
+}
+#title {
+    float: left;
+    font-size: 24px;
+    font-style: italic;
+}
+#title2 {
+    float: right;
+    font-size: 12px;
+    text-align: right;
+}
+
+#topnav {
+    margin-top: 11px;
+    margin-left: 250px;
+}
+#topnav a {
+    color: #333;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+    font-size: 17px;
+}
+#topnav a:hover {
+    background-color: #82e9de;
+    color: black;
+}
+#topnav a.active {
+    background-color: #4CAF50;
+    color: white;
+}
+#search {
+    display: inline-block;
+    padding-top: 5px;
+    padding-left: 20px;
+    width: 40%;
+}
+#search input {
+    width: 90%;
+}
+#content {
+    margin: 16px;
+}
+table {
+    margin-left: auto;
+    margin-right: auto;
+}
+.info td,.info th {
+    text-align: left;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+.info td {
+    font-family: mono;
+}
+thead tr {background: #82e9de}
+tbody tr:nth-child(even) {background: #EEE}
+.txs tbody tr {
+    background: #fff;
+}
+.txs th {
+    text-align: left;
+    padding: 5px;
+    font-size: 12px;
+}
+.txs a {
+    text-decoration: none;
+}
+.input, .output {
+    margin: 0;
+    border: 1px dashed;
+}
+.input td, .output td,.input th,.output th {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+.input thead tr, .output thead tr {
+    background: #eee;
+}
+.input {
+    margin-right: auto;
+}
+.output {
+    margin-left: auto;
+}
