@@ -11,6 +11,7 @@ import sqlite3
 from flask import Flask, url_for, abort, request, redirect
 from flask import render_template
 import datetime
+import time
 import decimal
 from chainview_config import VERSION, GITHUB, DBFILE, chaininfo, params
 
@@ -50,10 +51,12 @@ def latest_topinfo(cur):
         r = cur.execute('SELECT time FROM block WHERE height = ?', (dbmax,))
         timestamp = r.fetchone()[0]
     now = datetime.datetime.now().replace(microsecond=0)
-    time = datetime.datetime.fromtimestamp(int(timestamp))
-    age = ageof(time, now)
-    nowstr = now.strftime('%a') + ' ' + str(now)
-    return {'dbmax': dbmax, 'time': time, 'age': age, 'now': now, 'nowstr': nowstr,
+    timelast = datetime.datetime.fromtimestamp(int(timestamp))
+    age = ageof(timelast, now)
+    is_dst = time.daylight and time.localtime().tm_isdst > 0
+    tzname = time.tzname[is_dst]
+    nowstr = now.strftime('%a') + ' ' + str(now) + ' ' + tzname
+    return {'dbmax': dbmax, 'time': timelast, 'age': age, 'now': now, 'nowstr': nowstr,
             'version': VERSION, 'github': GITHUB}
 
 ############## main page is same as block list page

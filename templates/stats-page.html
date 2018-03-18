@@ -27,7 +27,7 @@
       <div class="center"><div class="inlineleft">
       <h2>Advanced views</h2>
       <p>Some features are only available when manually entering a url:</p>
-      {% set u = url_for('main_page', startblock='5000', txlimit='2') %}
+      {% set u = url_for('main_page', startblock=topinfo['dbmax'], txlimit='2') %}
       <p><a href="{{u}}">{{u}}</a> - blocks listing only including blocks where number of transactions &gt;= txlimit</p>
       {% set u = url_for('address_page', address='1eduGsrvBJcfyTMij2rYXk9viiVV78PNq', nocb='1') %}
       <p><a href="{{u}}">{{u}}</a> - address listing with coinbase txs removed</p>
