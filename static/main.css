@@ -106,3 +106,6 @@ tbody tr:nth-child(even) {background: #EEE}
 .output {
     margin-left: auto;
 }
+.info .balance {
+    text-align: right;
+}

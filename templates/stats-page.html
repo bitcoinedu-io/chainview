@@ -19,7 +19,7 @@
 	</thead>
 	<tbody>
 	  {% for m in topminers %}
-	  <tr><th>{{m[0]}}</th><td>{{m[1]}} {{chaininfo['unit']}}</td></tr>
+	  <tr><th>{{m[0]}}</th><td class="balance">{{m[1]}} {{chaininfo['unit']}}</td></tr>
 	  {% endfor %}
 	</tbody>
       </table>

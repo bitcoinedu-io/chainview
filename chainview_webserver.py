@@ -223,10 +223,11 @@ def stats_page():
         addr = r[0]
         value = r[1]
         if addr in topminers:
-            topminers[addr] = (topminers[addr] + decimal.Decimal(value)).quantize(decimal.Decimal(10)**-8)
+            topminers[addr] += decimal.Decimal(value)
         else:
             topminers[addr] = decimal.Decimal(value)
-    topminers = sorted(topminers.items(), key=lambda i: -i[1])
+        topminers[addr] = topminers[addr].quantize(decimal.Decimal(10)**-8)
+    topminers = sorted(topminers.items(), key=lambda i: (-i[1],i))
 
     res = cur.execute('SELECT time,difficulty FROM block WHERE height=?', (dbmax,))
     time0, diff0 = res.fetchone()
