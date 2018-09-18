@@ -183,7 +183,8 @@ def address_page(address):
     txs = [{'txid':r[0], 'n':-1, 'height':r[1], 'time':datetime.datetime.fromtimestamp(int(r[2]))}
            for r in res.fetchall()]
     if len(txs) == 0:
-        abort(404)
+    	return render_template('searchfail-page.html', chaininfo=chaininfo, topinfo=topinfo, search=address, err='Cannot find address (no transactions found)!')
+
     get_inputs_outputs(txs, cur)
     
     balance = decimal.Decimal('0.0')
