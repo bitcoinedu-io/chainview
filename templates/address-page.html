@@ -9,5 +9,8 @@
 	  <tr><th>No. transactions</th><td>{{addr['notxs']}}</td></tr>
 	</tbody>
       </table>
-      {% include "transaction-list.html" %}
+      <div class="center">
+	<h2>Transactions for address{{txinfo['header']}}</h2>
+	{% include "transaction-list.html" %}
+      </div>
 {% endblock %}

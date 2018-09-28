@@ -56,7 +56,10 @@ def latest_topinfo(cur):
     is_dst = time.daylight and time.localtime().tm_isdst > 0
     tzname = time.tzname[is_dst]
     nowstr = now.strftime('%a') + ' ' + str(now) + ' ' + tzname
+    r = cur.execute('SELECT COUNT(*) FROM tx WHERE blockhash="pending"')
+    pending = int(r.fetchone()[0])
     return {'dbmax': dbmax, 'time': timelast, 'age': age, 'now': now, 'nowstr': nowstr,
+            'pending': pending,
             'version': VERSION, 'github': GITHUB}
 
 ############## main page is same as block list page
@@ -103,7 +106,7 @@ def main_page(startblock=None):
     return render_template('main-page.html', chaininfo=chaininfo, topinfo=topinfo,
                            info=info, blocks=blocks)
 
-# Helper for block_page and address_page
+# Helper for block_page, address_page, and block_pending
 # Note: adds data to existing txs
 
 def get_inputs_outputs(txs, cur):
@@ -157,8 +160,22 @@ def block_page(blocknr):
         return render_template('block-page.html', chaininfo=chaininfo, topinfo=topinfo, info=info,
                                block=block, txinfo=txinfo, txs=txs)
     else:
-        abort(404)
+    	return render_template('searchfail-page.html', chaininfo=chaininfo, topinfo=topinfo, search=blocknr, err='Cannot find block!')
 
+@app.route("/block/pending")
+def block_pending():
+    con = sqlite3.connect(DBFILE)
+    cur = con.cursor()
+    topinfo = latest_topinfo(cur)
+    now = topinfo['now']
+    
+    res = cur.execute('SELECT txid,n FROM tx WHERE blockhash = ? ORDER BY n', ('pending',))
+    txs = [{'txid':r[0], 'n':r[1]} for r in res.fetchall()]
+    txinfo = {'page':'block', 'header':''}
+    get_inputs_outputs(txs, cur)
+    return render_template('block-pending.html', chaininfo=chaininfo, topinfo=topinfo,
+                           txinfo=txinfo, txs=txs)
+    
 @app.route("/address/<address>")
 def address_page(address):
     con = sqlite3.connect(DBFILE)

@@ -11,6 +11,7 @@
     <p id="title2">Chainview Block Explorer v{{topinfo['version']}}<br><a href="{{topinfo['github']}}">github</a></p>
     <div id="topnav">
     <a href="/blocks/">Blocks</a>
+    <a href="/block/pending">Pending</a>
     <a href="/stats/">Stats</a>
     <form id="search" action="{{url_for('search')}}"><input type="text" name="search" placeholder="Search for block, tx, address...">
     </form>
@@ -20,6 +21,7 @@
     <div id="info">
       <p style="float: right; margin: 0">{{topinfo['nowstr']}}</p>
       <p>Latest block: {{ topinfo['dbmax'] }}, {{ topinfo['time'] }} ({{topinfo['age']}} ago)
+	<br>Pending transactions: {{ topinfo['pending'] }}
 	</p>
     </div>
     {% block pagecontent %}

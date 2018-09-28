@@ -1,6 +1,6 @@
 # Common config for chainview
 
-VERSION = '1.0'
+VERSION = '1.1'
 GITHUB = 'https://github.com/bitcoinedu-io/chainview'
 
 DBFILE = 'chainview-db.sqlite3'

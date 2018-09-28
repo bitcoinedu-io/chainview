@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# chainview-createupdatedb.py
+# chainview_createupdatedb.py
 #
 # Create or update chainview database based on existing version number
 
@@ -20,13 +20,15 @@ if len(exists.fetchall()) > 0:
 
 print('Database version:', ver)
 
+# Note: one dummy "pending" block is special, see chainview_fill.py
+
 if ver == '0.0':
     c.executescript("""
 CREATE TABLE version (ver TEXT);
 
 CREATE TABLE block (
-    hash TEXT PRIMARY KEY,
-    height INTEGER UNIQUE,
+    hash TEXT PRIMARY KEY,      -- 'pending' means dummy pending block
+    height INTEGER UNIQUE,      -- '-1' means dummy pending block
     previousblockhash TEXT UNIQUE,
     strippedsize INTEGER,
     size INTEGER,
@@ -44,7 +46,7 @@ CREATE TABLE block (
 
 CREATE TABLE tx (
     txid TEXT PRIMARY KEY,
-    blockhash TEXT,
+    blockhash TEXT,       -- 'pending' means in mempool only
     n INTEGER
 );
 
