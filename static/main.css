@@ -11,7 +11,7 @@ a {
     display: inline-block; text-align: left;
 }
 #topbar {
-    background-color: #4db6ac;
+    background-color: #d2e68d;
     overflow: hidden;
 }
 #title,#title2 {
@@ -45,7 +45,7 @@ a {
     font-size: 17px;
 }
 #topnav a:hover {
-    background-color: #82e9de;
+    background-color: #a7d189;
     color: black;
 }
 #topnav a.active {
@@ -76,7 +76,7 @@ table {
 .info td {
     font-family: mono;
 }
-thead tr {background: #82e9de}
+thead tr {background: #ddeca9}
 tbody tr:nth-child(even) {background: #EEE}
 .txs tbody tr {
     background: #fff;
