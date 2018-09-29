@@ -241,10 +241,14 @@ def address_page(address):
         else:
             i += 1
 
-    firstuse = txs[-1]['time']
-    lastuse  = txs[0]['time']
     if len(pendingtxs) > 0:
         lastuse = pendingtxs[0]['time']
+    else:
+        lastuse  = txs[0]['time']
+    if len(txs) > 0:
+        firstuse = txs[-1]['time']
+    else:
+        firstuse = lastuse
     agefirst = ageof(firstuse, now)
     agelast = ageof(lastuse, now)
     addr = {'addr':address, 'balance':num2str(balance),
