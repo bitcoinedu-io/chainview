@@ -7,7 +7,7 @@ DBFILE = 'chainview-db.sqlite3'
 
 rpc_user = 'user'
 rpc_pass = 'pass'
-URL = 'http://%s:%s@localhost:8332' % (rpc_user, rpc_pass)
+NODEURL = 'http://%s:%s@localhost:8332' % (rpc_user, rpc_pass)
 
 chaininfo = {
     'name': 'Bitcoin Edu',
