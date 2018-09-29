@@ -7,7 +7,7 @@
 	    Tx #{{tx['n']}}: {{tx['txid']}}
 	    {% else %}
 	    Tx {{tx['txid']}} in
-	    block #<a href="{{url_for('block_page', blocknr=tx['height'])}}">{{tx['height']}}</a>
+	    block #{% if tx['height'] != -1 %}<a href="{{url_for('block_page', blocknr=tx['height'])}}">{{tx['height']}}</a>{% else %}<a href="{{url_for('block_pending')}}">pending</a>{% endif %}
 	    ({{tx['time']}})
 	    {% endif %}
 	  </th></tr>
@@ -45,7 +45,9 @@
 		    yes by <a href="{{url_for('search')}}?search={{op['spentby']}}">{{op['spentby'][0:3]}}...</a>
 		    {% endif %}
 		  </td></tr>
-	  {% endfor %}
+		{% endfor %}{% if tx['fee'] %}
+		<tr><td style="text-align: right">Fee</td><td>{{ tx['fee'] }}</td></tr>
+		{% endif %}
 	    </table>
 	    </td></tr>
 	  <tr><td>&nbsp</td></tr>

@@ -11,7 +11,7 @@ import datetime
 import requests
 import json
 import sqlite3
-from chainview_config import DBFILE, URL
+from chainview_config import DBFILE, NODEURL
 
 # Make RPC call to local node
 
@@ -21,7 +21,14 @@ def get(method, *args):
         "method": method,
         "params": list(args),
     }
-    return requests.post(URL, data=json.dumps(payload), headers=headers).json()['result']
+    r = requests.post(NODEURL, data=json.dumps(payload), headers=headers)
+    # HTTP status codes starting with 4xx indicate developer errors
+    if r.status_code >= 400 and r.status_code < 500:
+        r.raise_for_status()
+    r = r.json()
+    if r.get('error'):
+        print('API error:', r['error'])
+    return r['result']
 
 # Check if previous block has changed. Then a chain reordering has
 # occured and some old blocks should probably be thrown away or

@@ -5,12 +5,15 @@
 	</thead>
 	<tbody>
 	  <tr><th>Balance</th><td>{{addr['balance']}} {{chaininfo['unit']}}</td></tr>
-	  <tr><th>First use</th><td>{{addr['firstuse']}} ({{addr['age']}} ago)</td></tr>
+	  <tr><th>First use</th><td>{{addr['firstuse']}} ({{addr['agefirst']}} ago)</td></tr>
+	  <tr><th>Latest use</th><td>{{addr['lastuse']}} ({{addr['agelast']}} ago)</td></tr>
 	  <tr><th>No. transactions</th><td>{{addr['notxs']}}</td></tr>
 	</tbody>
       </table>
-      <div class="center">
-	<h2>Transactions for address{{txinfo['header']}}</h2>
-	{% include "transaction-list.html" %}
+      <div class="center">{% if pendingtxs|length > 0 %}
+	<h2>Pending transactions for address</h2>
+	{% set txs = pendingtxs %}{% include "transaction-list.html" %}{% endif %}
+	<h2>Confirmed transactions for address{{txinfo['header']}}</h2>
+	{% set txs = ctxs %}{% include "transaction-list.html" %}
       </div>
 {% endblock %}

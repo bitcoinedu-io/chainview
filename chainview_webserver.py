@@ -5,20 +5,25 @@
 # FLASK_APP=chainview-webserver.py flask run
 
 import sys
-import requests
-import json
+import requests, json
+import datetime, time
+import decimal
 import sqlite3
 from flask import Flask, url_for, abort, request, redirect
 from flask import render_template
-import datetime
-import time
-import decimal
 from chainview_config import VERSION, GITHUB, DBFILE, chaininfo, params
 
 app = Flask(__name__)
 
-print()
-print('Using database file:', DBFILE)
+# Round bitcoin amounts to 8 decimals (satoshis)
+# only needed once when going from float values
+def float2dec(a):
+    a = decimal.Decimal(a)
+    return a.quantize(decimal.Decimal(10)**-8)
+
+# decimal/float to string, remove trailing 0 and maybe '.'
+def num2str(d):
+    return ('%.8f' % float(d)).rstrip('0').rstrip('.')
 
 # Calc now - time and express rounded in human language
 # time, now should be datetime objects
@@ -95,7 +100,7 @@ def main_page(startblock=None):
     
     r = cur.execute('''
         SELECT height, time, numtxs FROM block
-        WHERE height <= ? AND numtxs >= ?
+        WHERE height <= ? AND height >= 0 AND numtxs >= ?
         ORDER BY height DESC LIMIT ?''', (str(high),txlimit,BLOCKS_PER_PAGE))
     blocks = []
     for r in r.fetchall():
@@ -107,7 +112,10 @@ def main_page(startblock=None):
                            info=info, blocks=blocks)
 
 # Helper for block_page, address_page, and block_pending
-# Note: adds data to existing txs
+# For each transaction in txs, fetch inputs and outputs
+# For an input, fetch corresponding spent output address and value
+# For an output, also find txid if spent in later transaction
+# Note: adds data to existing txs elements
 
 def get_inputs_outputs(txs, cur):
     for tx in txs:
@@ -118,13 +126,20 @@ def get_inputs_outputs(txs, cur):
         if len(inputs) == 0:
             tx['inputs'] = [('Coinbase', 'mining reward')]
         else:
-            tx['inputs'] = inputs
+            tx['inputs'] = [(i[0], num2str(i[1])) for i in inputs]
         resO = cur.execute(
             '''SELECT output.address,output.value,output.type,input.txid FROM output
                LEFT JOIN input ON input.spendstxid=output.txid AND input.spendsn=output.n
                WHERE output.txid=? ORDER BY output.n''', (txid,))
-        tx['outputs'] = [{'address':r[0], 'value':r[1], 'type':r[2], 'spentby':r[3]}
+        tx['outputs'] = [{'address':r[0], 'value':num2str(r[1]), 'type':r[2], 'spentby':r[3]}
                          for r in resO.fetchall()]
+        if tx['inputs'][0][0] != 'Coinbase':
+            fee = decimal.Decimal('0.0')
+            for ip in tx['inputs']:
+                fee += float2dec(ip[1])
+            for op in tx['outputs']:
+                fee -= float2dec(op['value'])
+            tx['fee'] = num2str(fee)
     return
 
 @app.route("/block/<int:blocknr>")
@@ -208,13 +223,29 @@ def address_page(address):
     for tx in txs:
         for op in tx['outputs']:
             if op['address'] == address and not op['spentby']:
-                balance += decimal.Decimal(op['value'])
-                balance = balance.quantize(decimal.Decimal(10)**-8)
-    firstuse = txs[0]['time']
-    age = ageof(firstuse, now)
-    addr = {'addr':address, 'balance':str(balance), 'firstuse':firstuse, 'age':age, 'notxs':len(txs)}
+                balance += float2dec(op['value'])
+        
+    firstuse = txs[-1]['time']
+    lastuse  = txs[0]['time']
+    agefirst = ageof(firstuse, now)
+    agelast = ageof(lastuse, now)
+    addr = {'addr':address, 'balance':num2str(balance),
+            'firstuse':firstuse, 'agefirst':agefirst,
+            'lastuse':lastuse, 'agelast':agelast,
+            'notxs':len(txs)}
     txinfo = {'page':'address', 'header':', recent first'}
     
+    # split off pending txs if any
+    pendingtxs = []
+    i = 0
+    while i < len(txs):
+        tx = txs[i]
+        if tx['height'] == -1:
+            ptx = txs.pop(i)
+            pendingtxs.append(ptx)
+        else:
+            i += 1
+
     # extra option to remove coinbase-txs
     nocb = int(request.args.get('nocb','0'))
     if nocb:
@@ -226,7 +257,7 @@ def address_page(address):
         txs = txs[0:500] # limit html to last txs
         txinfo['header'] += ', showing only 500'
     return render_template('address-page.html', chaininfo=chaininfo, topinfo=topinfo,
-                           addr=addr, txinfo=txinfo, txs=txs)
+                           addr=addr, txinfo=txinfo, pendingtxs=pendingtxs, ctxs=txs)
 
 @app.route("/stats/")
 def stats_page():
