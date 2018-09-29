@@ -177,10 +177,13 @@ def block_page(blocknr):
         txs = [{'txid':r[0], 'n':r[1]} for r in res.fetchall()]
         txinfo = {'page':'block', 'header':''}
         get_inputs_outputs(txs, cur)
-        return render_template('block-page.html', chaininfo=chaininfo, topinfo=topinfo, info=info,
+        pagetitle = 'Block #%d' % blocknr
+        return render_template('block-page.html', pagetitle=pagetitle, chaininfo=chaininfo, topinfo=topinfo, info=info,
                                block=block, txinfo=txinfo, txs=txs)
     else:
-    	return render_template('searchfail-page.html', chaininfo=chaininfo, topinfo=topinfo, search=blocknr, err='Cannot find block!')
+        pagetitle = 'Search failed'
+        return render_template('searchfail-page.html', pagetitle=pagetitle,
+                 chaininfo=chaininfo, topinfo=topinfo, search=blocknr, err='Cannot find block!')
 
 @app.route("/block/pending")
 def block_pending():
@@ -193,7 +196,8 @@ def block_pending():
     txs = [{'txid':r[0], 'n':r[1]} for r in res.fetchall()]
     txinfo = {'page':'block', 'header':''}
     get_inputs_outputs(txs, cur)
-    return render_template('block-pending.html', chaininfo=chaininfo, topinfo=topinfo,
+    pagetitle = 'Pending'
+    return render_template('block-pending.html', pagetitle=pagetitle, chaininfo=chaininfo, topinfo=topinfo,
                            txinfo=txinfo, txs=txs)
     
 @app.route("/address/<address>")
@@ -220,7 +224,8 @@ def address_page(address):
     txs = [{'txid':r[0], 'n':-1, 'height':r[1], 'time':datetime.datetime.fromtimestamp(int(r[2]))}
            for r in res.fetchall()]
     if len(txs) == 0:
-    	return render_template('searchfail-page.html', chaininfo=chaininfo, topinfo=topinfo, search=address, err='Cannot find address (no transactions found)!')
+        pagetitle = 'Address not found'
+        return render_template('searchfail-page.html', pagetitle=pagetitle, chaininfo=chaininfo, topinfo=topinfo, search=address, err='Cannot find address (no transactions found)!')
 
     get_inputs_outputs(txs, cur)
     
@@ -267,7 +272,8 @@ def address_page(address):
     if len(txs) > limit:
         txs = txs[0:500] # limit html to last txs
         txinfo['header'] += ', showing only 500'
-    return render_template('address-page.html', chaininfo=chaininfo, topinfo=topinfo,
+    pagetitle = 'Address %.8s...' % address
+    return render_template('address-page.html', pagetitle=pagetitle, chaininfo=chaininfo, topinfo=topinfo,
                            addr=addr, txinfo=txinfo, pendingtxs=pendingtxs, ctxs=txs)
 
 @app.route("/stats/")
@@ -312,7 +318,8 @@ def stats_page():
         nextdiff = float(diff0) * (blocktime*retarget) / float(estintervaltime)
     stats = {'minperblock': minperblock, 'diff0':diff0, 'diff1':diff1, 'diff7':diff7,
              'progress': '%d of %d' % (progress, retarget), 'nextdiff': nextdiff}
-    return render_template('stats-page.html', chaininfo=chaininfo, topinfo=topinfo,
+    pagetitle = 'Stats'
+    return render_template('stats-page.html', pagetitle=pagetitle, chaininfo=chaininfo, topinfo=topinfo,
                            topminers=topminers, stats=stats)
 
 @app.route("/search/")
@@ -353,5 +360,6 @@ def search():
         return redirect(url_for('address_page', address=s))
     
     topinfo = latest_topinfo(cur)
-    return render_template('searchfail-page.html', chaininfo=chaininfo, topinfo=topinfo, search=s, err=err)
+    pagetitle = 'Search failed'
+    return render_template('searchfail-page.html', pagetitle=pagetitle, chaininfo=chaininfo, topinfo=topinfo, search=s, err=err)
 
