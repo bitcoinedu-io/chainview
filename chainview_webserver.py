@@ -108,7 +108,12 @@ def main_page(startblock=None):
         b = {'height': r[0], 'time': time, 'age': ageof(time,now), 'numtxs': r[2]}
         blocks.append(b)
     info = {'low': low, 'high': high, 'prevurl': prevurl, 'nexturl': nexturl}
-    return render_template('main-page.html', chaininfo=chaininfo, topinfo=topinfo,
+    if startblock == None:
+        pagetitle = 'Latest blocks'
+    else:
+        pagetitle = 'Blocks %d to %d' % (low, high)
+        
+    return render_template('main-page.html', pagetitle=pagetitle, chaininfo=chaininfo, topinfo=topinfo,
                            info=info, blocks=blocks)
 
 # Helper for block_page, address_page, and block_pending
