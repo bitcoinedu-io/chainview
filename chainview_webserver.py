@@ -225,16 +225,6 @@ def address_page(address):
             if op['address'] == address and not op['spentby']:
                 balance += float2dec(op['value'])
         
-    firstuse = txs[-1]['time']
-    lastuse  = txs[0]['time']
-    agefirst = ageof(firstuse, now)
-    agelast = ageof(lastuse, now)
-    addr = {'addr':address, 'balance':num2str(balance),
-            'firstuse':firstuse, 'agefirst':agefirst,
-            'lastuse':lastuse, 'agelast':agelast,
-            'notxs':len(txs)}
-    txinfo = {'page':'address', 'header':', recent first'}
-    
     # split off pending txs if any
     pendingtxs = []
     i = 0
@@ -246,6 +236,18 @@ def address_page(address):
         else:
             i += 1
 
+    firstuse = txs[-1]['time']
+    lastuse  = txs[0]['time']
+    if len(pendingtxs) > 0:
+        lastuse = pendingtxs[0]['time']
+    agefirst = ageof(firstuse, now)
+    agelast = ageof(lastuse, now)
+    addr = {'addr':address, 'balance':num2str(balance),
+            'firstuse':firstuse, 'agefirst':agefirst,
+            'lastuse':lastuse, 'agelast':agelast,
+            'notxs':len(txs)+len(pendingtxs)}
+    txinfo = {'page':'address', 'header':', recent first'}
+    
     # extra option to remove coinbase-txs
     nocb = int(request.args.get('nocb','0'))
     if nocb:
