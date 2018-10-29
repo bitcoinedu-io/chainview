@@ -15,13 +15,17 @@ from chainview_config import DBFILE, NODEURL
 
 # Make RPC call to local node
 
+# Using sessions improves fetching block times slightly
+# 1000 first blocks fetched in 5.3 sec instead of 5.9 sec
+session = requests.Session()
+
 def get(method, *args):
     headers = {'content-type': 'application/json'}
     payload = {
         "method": method,
         "params": list(args),
     }
-    r = requests.post(NODEURL, data=json.dumps(payload), headers=headers)
+    r = session.post(NODEURL, data=json.dumps(payload), headers=headers)
     # HTTP status codes starting with 4xx indicate developer errors
     if r.status_code >= 400 and r.status_code < 500:
         r.raise_for_status()
