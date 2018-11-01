@@ -15,7 +15,7 @@
       </table>
       <br><br><br>      
       <table class="info">
-	<thead><tr><th colspan="2" style="text-align: left">Miners</th></tr>
+	<thead><tr><th colspan="2" style="text-align: left">Miners, from block height {{mineinfo['height_filter']}} (last {{mineinfo['last_months']}} months)</th></tr>
 	</thead>
 	<tbody>
 	  {% for m in topminers %}
@@ -31,5 +31,7 @@
       <p><a href="{{u}}">{{u}}</a> - blocks listing only including blocks where number of transactions &gt;= txlimit</p>
       {% set u = url_for('address_page', address='1eduGsrvBJcfyTMij2rYXk9viiVV78PNq', nocb='1') %}
       <p><a href="{{u}}">{{u}}</a> - address listing with coinbase txs removed</p>
+      {% set u = url_for('stats_page', startblock='1000') %}
+      <p><a href="{{u}}">{{u}}</a> - stats page with top miners above or equal block height 1000</p>
       </div></div>
 {% endblock %}

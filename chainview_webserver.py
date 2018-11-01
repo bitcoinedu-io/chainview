@@ -7,7 +7,7 @@
 import sys
 import requests, json
 import datetime, time
-import decimal
+import decimal, math
 import sqlite3
 from flask import Flask, url_for, abort, request, redirect
 from flask import render_template
@@ -276,14 +276,28 @@ def address_page(address):
     return render_template('address-page.html', pagetitle=pagetitle, chaininfo=chaininfo, topinfo=topinfo,
                            addr=addr, txinfo=txinfo, pendingtxs=pendingtxs, ctxs=txs)
 
+@app.route("/stats/<int:startblock>")
 @app.route("/stats/")
-def stats_page():
+def stats_page(startblock=None):
     con = sqlite3.connect(DBFILE)
     cur = con.cursor()
     topinfo = latest_topinfo(cur)
     now = topinfo['now']
     dbmax = topinfo['dbmax']
-    res = cur.execute('SELECT address, value FROM output JOIN tx ON output.txid=tx.txid WHERE tx.n="0" and output.n="0"')
+    if startblock == None:
+        last_months = 4
+        last_blocks = 6*24*30*last_months   # filter out latest months only
+        height_filter = dbmax - last_blocks
+    else:
+        height_filter = startblock
+        last_blocks = dbmax - startblock
+        last_months = math.ceil(last_blocks/(6*24*30))
+    res = cur.execute('''
+       SELECT address, value FROM
+              output JOIN tx ON output.txid=tx.txid
+                     JOIN block ON tx.blockhash=block.hash
+              WHERE tx.n="0" and output.n="0" and block.height>=?
+    ''', (height_filter,))
     topminers = {}
     for r in res.fetchall():
         addr = r[0]
@@ -294,6 +308,7 @@ def stats_page():
             topminers[addr] = decimal.Decimal(value)
         topminers[addr] = topminers[addr].quantize(decimal.Decimal(10)**-8)
     topminers = sorted(topminers.items(), key=lambda i: (-i[1],i))
+    mineinfo = {'last_months': last_months, 'height_filter': height_filter}
 
     res = cur.execute('SELECT time,difficulty FROM block WHERE height=?', (dbmax,))
     time0, diff0 = res.fetchone()
@@ -320,7 +335,7 @@ def stats_page():
              'progress': '%d of %d' % (progress, retarget), 'nextdiff': nextdiff}
     pagetitle = 'Stats'
     return render_template('stats-page.html', pagetitle=pagetitle, chaininfo=chaininfo, topinfo=topinfo,
-                           topminers=topminers, stats=stats)
+                           mineinfo=mineinfo, topminers=topminers, stats=stats)
 
 @app.route("/search/")
 def search():
