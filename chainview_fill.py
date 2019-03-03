@@ -199,7 +199,7 @@ def delete_txids(to_delete):
         cur.execute('DELETE FROM output WHERE txid = ?', (id,))
 
 print('Using database file:', DBFILE)
-con = sqlite3.connect(DBFILE)
+con = sqlite3.connect(DBFILE, timeout=30)
 cur = con.cursor()
 
 while True:
