@@ -67,13 +67,16 @@ def fetchtx(txid):
             n = vout['n']
             spb = vout['scriptPubKey']
             typ = ''
-            if spb['type'] != 'nulldata':
-                addr = vout['scriptPubKey']['addresses'][0]
+            value = 0
+            if 'value' in vout:
                 value = vout['value']
+            if 'address' in spb:
+                addr = spb['address']
             else:
-                addr = 'nulldata'
-                value = 0
-                typ = 'c'
+                addr = spb['type']   # e.g. 'nulldata' or 'pubkey'
+                typ = 'u'            # unknown
+                if spb['type'] == 'nulldata':
+                    typ = 'c'        # coinbase
             cur.execute('INSERT INTO output (txid,n,type,value,address) VALUES (?,?,?,?,?)',
                         (txid, n, typ, value, addr))
         

@@ -60,7 +60,7 @@ CREATE TABLE input (
 CREATE TABLE output (
     txid TEXT,
     n INTEGER,
-    type TEXT,       -- '' = normal, 'c' = nulltype/coinbase
+    type TEXT,       -- '' = normal, 'c' = nulltype/coinbase, 'u' = unknown
     value INTEGER,   -- satoshis
     address TEXT
 );
